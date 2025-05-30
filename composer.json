@@ -1,11 +1,11 @@
 {
-    "name": "julio101920/postgresql-backup-manager",
+    "name": "julio101290/postgresql-backup-manager",
     "description": "Librería para respaldo y restauración de bases de datos PostgreSQL con verificación de pg_dump, adaptado por julio101920.",
     "type": "library",
     "license": "MIT",
     "authors": [
         {
-            "name": "julio101920",
+            "name": "julio101290",
             "email": "juliocesarleyvarodriguez@hotmail.com"
         }
     ],

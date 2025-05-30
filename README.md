@@ -15,7 +15,7 @@
 - Permite respaldar tablas específicas o toda la base de datos.
 - Opcionalmente comprime el respaldo en un archivo ZIP.
 - Envía el respaldo por correo electrónico usando **PHPMailer**.
-- Adaptado por **julio101920** para mayor compatibilidad y personalización.
+- Adaptado por **julio101290** para mayor compatibilidad y personalización.
 
 ---
 
@@ -47,7 +47,7 @@
 Desde la raíz de tu proyecto, ejecuta:
 
 ```bash
-composer require julio101920/postgresql-backup-manager
+composer require julio101290/postgresql-backup-manager
 ```
 
 ---
@@ -110,7 +110,7 @@ Este proyecto está basado y adaptado para ofrecer mejor compatibilidad con Post
 
 ## 📝 Licencia
 
-MIT License © 2025 julio101920
+MIT License © 2025 julio101290
 
 ---
 
