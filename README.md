@@ -1,50 +1,52 @@
+# 🐘 PostgreSQL Backup Manager
 
-# PostgreSQLBackupManager
+[![Versión estable](https://img.shields.io/badge/versi%C3%B3n-estable-brightgreen)](https://github.com/julio101290/psql-backup/releases)
+[![Licencia MIT](https://img.shields.io/badge/Licencia-MIT-blue)](LICENSE)
+[![PHP](https://img.shields.io/badge/PHP-7.3%2B%20|%208.x-blue.svg)](https://www.php.net/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-9.6%2B-blue.svg)](https://www.postgresql.org/)
 
-![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
-![PHP Version](https://img.shields.io/badge/PHP-7.4%2B-blue.svg)
-
----
-
-## 📦 Descripción
-
-**PostgreSQLBackupManager** es una librería PHP para realizar respaldos y restauraciones de bases de datos **PostgreSQL** de manera sencilla y confiable. 
-
-- Detecta automáticamente si tienes `pg_dump` instalado para hacer un respaldo rápido y eficiente.
-- Si `pg_dump` no está disponible, usa una solución nativa en PHP que realiza el backup y restore.
-- Permite respaldar tablas específicas o toda la base de datos.
-- Opcionalmente comprime el respaldo en un archivo ZIP.
-- Envía el respaldo por correo electrónico usando **PHPMailer**.
-- Adaptado por **julio101290** para mayor compatibilidad y personalización.
+**PostgreSQL Backup Manager** es una biblioteca PHP moderna para crear y restaurar respaldos de bases de datos PostgreSQL. Perfecta para entornos donde `pg_dump` no está disponible, pero también lo aprovecha si está presente.
 
 ---
 
-## 🚀 Características principales
+## 📚 Tabla de Contenido
 
-- Compatible con PostgreSQL vía PDO.
-- Verificación automática y uso de `pg_dump` si está disponible.
-- Backup nativo en PHP con exportación del esquema y datos.
-- Restauración sencilla desde archivos SQL.
-- Soporte para envío de respaldos por email.
-- Archivo de respaldo con marca de tiempo y nombre de base de datos.
-- Fácil integración con Composer y PSR-4.
-- Adaptado y mejorado para proyectos modernos en PHP 7.4+.
-
----
-
-## 📋 Requisitos
-
-- PHP 7.4 o superior
-- Extensión PDO con soporte PostgreSQL (`pdo_pgsql`)
-- (Opcional) Herramienta `pg_dump` disponible en el sistema para respaldos más rápidos
-- Librería [PHPMailer](https://github.com/PHPMailer/PHPMailer) (se instala vía Composer)
-- Permisos para crear archivos y carpetas para los respaldos
+- [🚀 Características](#-características)
+- [🛠️ Requisitos](#️-requisitos)
+- [📦 Instalación](#-instalación)
+- [⚙️ Uso](#️-uso)
+  - [Inicialización](#inicialización)
+  - [Crear un respaldo](#crear-un-respaldo)
+  - [Restaurar un respaldo](#restaurar-un-respaldo)
+- [🔌 Ejemplo con CodeIgniter 4](#-ejemplo-con-codeigniter-4)
+- [🧪 Restauración desde archivo ZIP](#-restauración-desde-archivo-zip)
+- [🧾 Licencia](#-licencia)
+- [🙌 Agradecimientos](#-agradecimientos)
 
 ---
 
-## ⚙️ Instalación
+## 🚀 Características
 
-Desde la raíz de tu proyecto, ejecuta:
+✅ Detección automática de `pg_dump`  
+✅ Soporte para exportaciones comprimidas `.zip` (solo PostgreSQL)  
+✅ Soporte completo para `PDO`  
+✅ Compatible con cualquier framework PHP (especialmente CodeIgniter 4)  
+✅ Restauración rápida y confiable
+
+---
+
+## 🛠️ Requisitos
+
+- PHP 7.3 o superior
+- Extensión `PDO` habilitada
+- PostgreSQL 9.6 o superior
+- Opcional: `pg_dump` en el sistema para respaldos más eficientes
+
+---
+
+## 📦 Instalación
+
+Instala el paquete usando Composer:
 
 ```bash
 composer require julio101290/postgresql-backup-manager
@@ -52,72 +54,94 @@ composer require julio101290/postgresql-backup-manager
 
 ---
 
-## 🧑‍💻 Uso Básico
+## ⚙️ Uso
+
+### Inicialización
 
 ```php
-<?php
-require 'vendor/autoload.php';
+use PostgresqlBackupManager\PostgreSQLBackup;
 
-use PostgreSQLBackupManager\PostgreSQLBackup;
+$pdo = new PDO("pgsql:host=localhost;port=5432;dbname=mi_base", "usuario", "contraseña");
 
-// Crear conexión PDO a PostgreSQL
-$pdo = new PDO('pgsql:host=localhost;port=5432;dbname=tu_basedatos', 'usuario', 'contraseña');
+$backup = new PostgreSQLBackup(
+    $pdo,
+    'mi_base',
+    'usuario',
+    'contraseña',
+    'localhost',
+    5432,
+    __DIR__ . '/backups'
+);
+```
 
-// Crear instancia del backup manager
-$backupManager = new PostgreSQLBackup($pdo, __DIR__ . '/backups');
+---
 
-try {
-    // Hacer respaldo completo, incluir datos, crear zip y sin enviar email
-    $backupFile = $backupManager->backup(null, true, true);
+### Crear un respaldo
 
-    echo "Backup creado exitosamente en: $backupFile\n";
-} catch (Exception $e) {
-    echo "Error al crear backup: " . $e->getMessage() . "\n";
+```php
+$archivoSQL = $backup->backup(); // Sin compresión
+$archivoZip = $backup->backup(true); // Con compresión ZIP
+```
+
+---
+
+### Restaurar un respaldo
+
+```php
+$backup->restore('/ruta/al/respaldo.sql');
+$backup->restore('/ruta/al/respaldo.sql.zip'); // Si está comprimido
+```
+
+---
+
+## 🔌 Ejemplo con CodeIgniter 4
+
+```php
+public function restaurar($uuid) {
+    $info = $this->backups->where('uuid', $uuid)->first();
+
+    $config = config('Database')->default;
+
+    $pdo = new \PDO("pgsql:host={$config['hostname']};port={$config['port']};dbname={$config['database']}",
+                    $config['username'], $config['password']);
+
+    $backup = new PostgreSQLBackup(
+        $pdo,
+        $config['database'],
+        $config['username'],
+        $config['password'],
+        $config['hostname'],
+        $config['port']
+    );
+
+    try {
+        $backup->restore($info['SQLFile']);
+        return $this->respondCreated(true, lang("backups.msg.restored"));
+    } catch (Exception $e) {
+        return $this->failServerError('Error al restaurar: ' . $e->getMessage());
+    }
 }
 ```
 
 ---
 
-## 🛠️ Métodos principales
+## 🧪 Restauración desde archivo ZIP
 
-### `backup($tables = null, $includeData = true, $archive = false, $emailRecipient = null)`
+Si el respaldo fue generado con compresión (`$backup->backup(true);`), se creará un archivo `.sql.zip`. La clase `restore()` detecta automáticamente si es un `.zip` y lo descomprime para ejecutar el contenido.
 
-- **$tables**: string|array|null - Nombre(s) de tabla(s) para respaldar. Null para todas.
-- **$includeData**: bool - Si incluir datos o solo estructura.
-- **$archive**: bool - Comprime el archivo SQL en ZIP.
-- **$emailRecipient**: string|null - Email para enviar respaldo adjunto (opcional).
-
-### `restore($backupFilePath, $dropTables = true)`
-
-- **$backupFilePath**: string - Ruta al archivo SQL de respaldo.
-- **$dropTables**: bool - Si eliminar tablas existentes antes de restaurar.
+> 📌 Asegúrate de que el archivo `.zip` solo contenga un `.sql`.
 
 ---
 
-## 📂 Estructura del respaldo
+## 🧾 Licencia
 
-- Archivo SQL con sentencias para crear tablas y volcar datos.
-- Comentarios con detalles del backup (fecha, servidor, versión).
-- Compatible con PostgreSQL y formato estándar SQL.
+Este proyecto está bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
 
 ---
 
-## ✨ Adaptado por julio101920
+## 🙌 Agradecimientos
 
-Este proyecto está basado y adaptado para ofrecer mejor compatibilidad con PostgreSQL, detección automática de `pg_dump`, y soporte en PHP puro para quienes no cuenten con esta herramienta. ¡Gracias por usarlo!
-
----
-
-## 📝 Licencia
-
-MIT License © 2025 julio101290
+🔧 Basado en la implementación original de [Ramazan Çetinkaya](https://github.com/ramazancetinkaya/mysql-backup)  
+🛠️ Adaptado y mejorado por [julio101290](https://github.com/julio101290)
 
 ---
-
-## 📬 Contacto
-
-Si tienes dudas, sugerencias o quieres reportar un error, abre un issue o contáctame directamente.
-
----
-
-¡Gracias por usar **PostgreSQLBackupManager**! 🎉
