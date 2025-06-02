@@ -52,13 +52,13 @@ class PostgreSQLBackup {
 
         if (shell_exec("which pg_dump")) {
             $cmd = sprintf(
-                'PGPASSWORD="%s" pg_dump -U %s -h %s -p %d -F p -d %s > %s',
-                $this->dbPassword,
-                $this->dbUser,
-                $this->dbHost,
-                $this->dbPort,
-                $this->dbName,
-                escapeshellarg($filename)
+                    'PGPASSWORD="%s" pg_dump -U %s -h %s -p %d -F p -d %s > %s',
+                    $this->dbPassword,
+                    $this->dbUser,
+                    $this->dbHost,
+                    $this->dbPort,
+                    $this->dbName,
+                    escapeshellarg($filename)
             );
             $result = null;
             system($cmd, $result);
@@ -115,14 +115,42 @@ class PostgreSQLBackup {
     }
 
     public function restore(string $sqlFile): bool {
-        $sql = file_get_contents($sqlFile);
-        $stmts = array_filter(array_map('trim', explode(';', $sql)));
-
-        $this->db->beginTransaction();
-        try {
-            foreach ($stmts as $stmt) {
-                $this->db->exec($stmt);
+        // Descomprimir si es .zip
+        if (str_ends_with($sqlFile, '.zip')) {
+            $zip = new \ZipArchive();
+            if ($zip->open($sqlFile) === TRUE) {
+                $zip->extractTo(dirname($sqlFile));
+                $extracted = $zip->getNameIndex(0);
+                $zip->close();
+                $sqlFile = dirname($sqlFile) . '/' . $extracted;
+            } else {
+                throw new Exception("No se pudo descomprimir el archivo ZIP");
             }
+        }
+
+        // Si contiene COPY ... FROM stdin o \., usar psql
+        $sqlContent = file_get_contents($sqlFile);
+        if (str_contains($sqlContent, 'COPY') && str_contains($sqlContent, '\\.')) {
+            $cmd = sprintf(
+                    'PGPASSWORD="%s" psql -U %s -h %s -p %d -d %s -f %s',
+                    $this->dbPassword,
+                    $this->dbUser,
+                    $this->dbHost,
+                    $this->dbPort,
+                    $this->dbName,
+                    escapeshellarg($sqlFile)
+            );
+            system($cmd, $result);
+            if ($result !== 0) {
+                throw new Exception("Error al restaurar con psql");
+            }
+            return true;
+        }
+
+        // Restauración simple con PDO (si no tiene COPY ... FROM)
+        try {
+            $this->db->beginTransaction();
+            $this->db->exec($sqlContent);
             $this->db->commit();
             return true;
         } catch (Exception $e) {
@@ -131,4 +159,3 @@ class PostgreSQLBackup {
         }
     }
 }
-
