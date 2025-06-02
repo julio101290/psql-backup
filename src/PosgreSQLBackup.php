@@ -11,7 +11,7 @@
  * @link https://github.com/ramazancetinkaya/mysql-backup
  */
 
-namespace PostgreSQLBackupManager;
+namespace PostgresqlBackupManager;
 
 use PDO;
 use ZipArchive;

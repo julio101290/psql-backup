@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "PostgreSQLBackupManager\\": "src/"
+            "PostgresqlBackupManager\\": "src/"
         }
     },
     "minimum-stability": "stable"
